@@ -2,7 +2,6 @@
 using KinectPlayGround.Kinect.Domain;
 using System.Collections.Generic;
 using UniRx;
-using UniRx.Triggers;
 using UnityEngine;
 using Zenject;
 
@@ -55,9 +54,8 @@ namespace KinectPlayGround.Kinect.Presentation
 
         private void InitMeshUpdateStream()
         {
-            this.UpdateAsObservable()
-                .Select(_ => _kinectService.PointCloudData)
-                .Where(pointCloudData => pointCloudData.Vertexes != null)
+            _kinectService
+                .OnUpdatePointCloudData
                 .Subscribe(UpdateMeshByPointCloudData);
         }
 

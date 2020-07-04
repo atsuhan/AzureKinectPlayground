@@ -1,4 +1,5 @@
 ﻿using KinectPlayGround.Kinect.Domain;
+using System;
 using Zenject;
 
 namespace KinectPlayGround.Kinect.Application
@@ -7,7 +8,7 @@ namespace KinectPlayGround.Kinect.Application
     {
         [Inject] private IKinectManager _kinectManager = null;
 
-        public CaptureData CaptureData => _kinectManager.CaptureData;
-        public PointCloudData PointCloudData => _kinectManager.PointCloudData;
+        public CaptureInfo CaptureData => _kinectManager.CaptureData;
+        public IObservable<PointCloudData> OnUpdatePointCloudData => _kinectManager.OnUpdatePointCloudData;
     }
 }

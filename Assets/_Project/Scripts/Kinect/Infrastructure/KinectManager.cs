@@ -2,9 +2,8 @@
 using KinectPlayGround.Kinect.Domain;
 using Microsoft.Azure.Kinect.Sensor;
 using System;
-using System.Collections;
-using System.Threading;
 using System.Threading.Tasks;
+using UniRx;
 using UnityEngine;
 using Zenject;
 
@@ -14,14 +13,13 @@ namespace KinectPlayGround.Kinect.Infrastructure
     {
         private Device _kinect;
         private Transformation _kinectTransformation;
+        private Subject<PointCloudData> _subjectPointCloudData = new Subject<PointCloudData>();
 
         private Vector3[] _pointVertexes;
         private Color32[] _pointColors;
 
-        public CaptureData CaptureData { get; private set; }
-
-        public PointCloudData PointCloudData { get; private set; }
-
+        public CaptureInfo CaptureData { get; private set; }
+        public IObservable<PointCloudData> OnUpdatePointCloudData => _subjectPointCloudData.AsObservable();
 
         public void Initialize()
         {
@@ -49,7 +47,7 @@ namespace KinectPlayGround.Kinect.Infrastructure
         {
             int width = _kinect.GetCalibration().DepthCameraCalibration.ResolutionWidth;
             int height = _kinect.GetCalibration().DepthCameraCalibration.ResolutionHeight;
-            CaptureData = new CaptureData(width, height);
+            CaptureData = new CaptureInfo(width, height);
         }
 
         private void InitPointCloudArr()
@@ -86,7 +84,8 @@ namespace KinectPlayGround.Kinect.Infrastructure
                         );
                     }
 
-                    PointCloudData = new PointCloudData(_pointVertexes, _pointColors);
+                    PointCloudData resultPointCloud = new PointCloudData(_pointVertexes, _pointColors);
+                    _subjectPointCloudData.OnNext(resultPointCloud);
                 }
             }
         }
