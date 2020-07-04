@@ -1,36 +1,31 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace KinectPlayGround.Kinect.Domain
 {
-    public struct CaptureData
+    public struct KinectDeviceInfo
     {
         public int Width { get; }
         public int Height { get; }
-        public int TotalPixelNum { get; }
+        public int TotalPixelNum => Width * Height;
 
-        public CaptureData(int width, int height)
+        public KinectDeviceInfo(int width, int height)
         {
             Width = width;
             Height = height;
-            TotalPixelNum = width * height;
         }
     }
-    public struct PointCloudData
-    {
-        public Vector3[] Vertexes { get; }
-        public Color32[] Colors { get; }
 
-        public PointCloudData(Vector3[] vertexPositions, Color32[] vertexColors)
-        {
-            Vertexes = vertexPositions;
-            Colors = vertexColors;
-        }
+    public struct KinectResultData
+    {
+        public Vector3[] Vertexes;
+        public Color32[] Colors;
+        public Texture2D RGBTexture;
     }
 
     public interface IKinectManager
     {
-        CaptureData CaptureData { get; }
-        PointCloudData PointCloudData { get; }
-
+        KinectDeviceInfo DeviceInfo { get; }
+        IObservable<KinectResultData> OnUpdateResultData { get; }
     }
 }
