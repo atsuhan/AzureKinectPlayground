@@ -1,5 +1,4 @@
 ﻿using System;
-using UniRx;
 using UnityEngine;
 
 namespace KinectPlayGround.Kinect.Domain
