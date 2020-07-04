@@ -8,7 +8,7 @@ namespace KinectPlayGround.Kinect.Application
     {
         [Inject] private IKinectManager _kinectManager = null;
 
-        public CaptureInfo CaptureData => _kinectManager.CaptureData;
-        public IObservable<PointCloudData> OnUpdatePointCloudData => _kinectManager.OnUpdatePointCloudData;
+        public KinectDeviceInfo DeviceInfo => _kinectManager.DeviceInfo;
+        public IObservable<KinectResultData> OnUpdateResultData => _kinectManager.OnUpdateResultData;
     }
 }

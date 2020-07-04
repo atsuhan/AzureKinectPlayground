@@ -244,6 +244,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eecac48b1100aa144b273e3c4e4ca01f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _meshTopology: 2
 --- !u!4 &713332491
 Transform:
   m_ObjectHideFlags: 0

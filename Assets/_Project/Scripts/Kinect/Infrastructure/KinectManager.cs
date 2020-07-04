@@ -13,23 +13,32 @@ namespace KinectPlayGround.Kinect.Infrastructure
     {
         private Device _kinect;
         private Transformation _kinectTransformation;
-        private Subject<PointCloudData> _subjectPointCloudData = new Subject<PointCloudData>();
 
-        private Vector3[] _pointVertexes;
-        private Color32[] _pointColors;
+        private KinectResultData _resultData = new KinectResultData();
+        private Subject<KinectResultData> _subjectResultData = new Subject<KinectResultData>();
 
-        public CaptureInfo CaptureData { get; private set; }
-        public IObservable<PointCloudData> OnUpdatePointCloudData => _subjectPointCloudData.AsObservable();
 
+        public KinectDeviceInfo DeviceInfo { get; private set; }
+        public IObservable<KinectResultData> OnUpdateResultData => _subjectResultData.AsObservable();
+
+
+        #region ZenjectInterfaces
         public void Initialize()
         {
-            InitKinect();
-            InitCaptureData();
-            InitPointCloudArr();
-            PointCloudDataUpdater().Forget();
+            InitDevice();
+            InitDeviceInfo();
+            InitResultData(DeviceInfo);
+            LoopResultDataUpdater().Forget();
         }
 
-        private void InitKinect()
+        public void Dispose()
+        {
+            _kinect.StopCameras();
+        }
+        #endregion
+
+
+        private void InitDevice()
         {
             _kinect = Device.Open(0);
             _kinect.StartCameras(new DeviceConfiguration
@@ -43,20 +52,21 @@ namespace KinectPlayGround.Kinect.Infrastructure
             _kinectTransformation = _kinect.GetCalibration().CreateTransformation();
         }
 
-        private void InitCaptureData()
+        private void InitDeviceInfo()
         {
             int width = _kinect.GetCalibration().DepthCameraCalibration.ResolutionWidth;
             int height = _kinect.GetCalibration().DepthCameraCalibration.ResolutionHeight;
-            CaptureData = new CaptureInfo(width, height);
+            DeviceInfo = new KinectDeviceInfo(width, height);
         }
 
-        private void InitPointCloudArr()
+        private void InitResultData(KinectDeviceInfo deviceInfo)
         {
-            _pointVertexes = new Vector3[CaptureData.TotalPixelNum];
-            _pointColors = new Color32[CaptureData.TotalPixelNum];
+            _resultData.Vertexes = new Vector3[deviceInfo.TotalPixelNum];
+            _resultData.Colors = new Color32[deviceInfo.TotalPixelNum];
+            _resultData.RGBTexture = new Texture2D(deviceInfo.Width, deviceInfo.Height);
         }
 
-        private async UniTaskVoid PointCloudDataUpdater()
+        private async UniTaskVoid LoopResultDataUpdater()
         {
             while (true)
             {
@@ -68,31 +78,26 @@ namespace KinectPlayGround.Kinect.Infrastructure
                     Image xyzImage = _kinectTransformation.DepthImageToPointCloud(capture.Depth);
                     Short3[] xyzArray = xyzImage.GetPixels<Short3>().ToArray();
 
-                    for (int i = 0; i < _pointVertexes.Length; i++)
+                    for (int i = 0; i < DeviceInfo.TotalPixelNum; i++)
                     {
-                        _pointVertexes[i] = new Vector3(
+                        _resultData.Vertexes[i] = new Vector3(
                             xyzArray[i].X * 0.001f,
                             -xyzArray[i].Y * 0.001f,
                             xyzArray[i].Z * 0.001f
                         );
 
-                        _pointColors[i] = new Color32(
+                        _resultData.Colors[i] = new Color32(
                             colorArray[i].R,
                             colorArray[i].G,
                             colorArray[i].B,
                             colorArray[i].A
                         );
                     }
+                    _resultData.RGBTexture.SetPixels32(_resultData.Colors);
 
-                    PointCloudData resultPointCloud = new PointCloudData(_pointVertexes, _pointColors);
-                    _subjectPointCloudData.OnNext(resultPointCloud);
+                    _subjectResultData.OnNext(_resultData);
                 }
             }
-        }
-
-        public void Dispose()
-        {
-            _kinect.StopCameras();
         }
     }
 }
