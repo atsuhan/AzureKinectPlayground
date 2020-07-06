@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿using System;
+using UniRx;
+using UnityEngine;
 
 [ExecuteAlways]
 [DefaultExecutionOrder(10000)]
@@ -19,19 +21,36 @@ public class TextureProjector : MonoBehaviour
     [SerializeField]
     private Texture2D _texture;
 
-
-
-    private void Update()
+    private void Start()
     {
-        if (_texture == null)
-        {
-            return;
-        }
-        var viewMatrix = Matrix4x4.Scale(new Vector3(1, 1, -1)) * transform.worldToLocalMatrix;
+        InitStream();
+    }
+
+    private void InitStream()
+    {
+        IObservable<Unit> moveStream = transform
+            .ObserveEveryValueChanged(trans => trans.position)
+            .Select(_ => Unit.Default);
+
+        IObservable<Unit> rotationStream = transform
+            .ObserveEveryValueChanged(trans => trans.rotation)
+            .Select(_ => Unit.Default);
+
+        Observable
+            .Merge(moveStream, rotationStream)
+            .Subscribe(_ => UpdateProjector())
+            .AddTo(this);
+    }
+
+    private void UpdateProjector()
+    {
+        if (_texture == null) return;
+
+        Matrix4x4 viewMatrix = Matrix4x4.Scale(new Vector3(1, 1, -1)) * transform.worldToLocalMatrix;
         Matrix4x4 projectionMatrix;
         if (_orthographic)
         {
-            var orthographicWidth = _orthographicSize * _aspect;
+            float orthographicWidth = _orthographicSize * _aspect;
             projectionMatrix = Matrix4x4.Ortho(-orthographicWidth, orthographicWidth, -_orthographicSize, _orthographicSize, _nearClipPlane, _farClipPlane);
         }
         else
@@ -41,24 +60,24 @@ public class TextureProjector : MonoBehaviour
         projectionMatrix = GL.GetGPUProjectionMatrix(projectionMatrix, true);
         Shader.SetGlobalMatrix("_ProjectorMatrixVP", projectionMatrix * viewMatrix);
         Shader.SetGlobalTexture("_ProjectorTexture", _texture);
-        // プロジェクターの位置を渡す
-        // _ObjectSpaceLightPosのような感じでwに0が入っていたらOrthographicの前方方向とみなす
-        var projectorPos = Vector4.zero;
+
+        Vector4 projectorPos = Vector4.zero;
         projectorPos = _orthographic ? transform.forward : transform.position;
         projectorPos.w = _orthographic ? 0 : 1;
         Shader.SetGlobalVector("_ProjectorPos", projectorPos);
     }
 
+#if UNITY_EDITOR
     private void OnDrawGizmos()
     {
-        var gizmosMatrix = Gizmos.matrix;
+        Matrix4x4 gizmosMatrix = Gizmos.matrix;
         Gizmos.matrix = Matrix4x4.TRS(transform.position, transform.rotation, Vector3.one);
 
         if (_orthographic)
         {
-            var orthographicWidth = _orthographicSize * _aspect;
-            var length = _farClipPlane - _nearClipPlane;
-            var start = _nearClipPlane + length / 2;
+            float orthographicWidth = _orthographicSize * _aspect;
+            float length = _farClipPlane - _nearClipPlane;
+            float start = _nearClipPlane + length / 2;
             Gizmos.DrawWireCube(Vector3.forward * start, new Vector3(orthographicWidth * 2, _orthographicSize * 2, length));
         }
         else
@@ -68,4 +87,5 @@ public class TextureProjector : MonoBehaviour
 
         Gizmos.matrix = gizmosMatrix;
     }
+#endif
 }
