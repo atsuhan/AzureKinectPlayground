@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 72983169}
   - component: {fileID: 72983168}
   m_Layer: 0
-  m_Name: ProjectorComponent
+  m_Name: ProjectorWithComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -181,7 +181,7 @@ GameObject:
   m_Component:
   - component: {fileID: 276217592}
   m_Layer: 0
-  m_Name: Field
+  m_Name: ProjectorTargets
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -612,7 +612,7 @@ GameObject:
   - component: {fileID: 2089801880}
   - component: {fileID: 2089801882}
   m_Layer: 0
-  m_Name: TextureProjector
+  m_Name: Projector
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
