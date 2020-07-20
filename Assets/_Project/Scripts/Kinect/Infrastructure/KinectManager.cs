@@ -16,11 +16,12 @@ namespace KinectPlayGround.Kinect.Infrastructure
 
         private KinectResultData _resultData = new KinectResultData();
         private Subject<KinectResultData> _subjectResultData = new Subject<KinectResultData>();
+        private Color32[] _depthImageColors = null;
 
-
+        #region IKinectManager
         public KinectDeviceInfo DeviceInfo { get; private set; }
         public IObservable<KinectResultData> OnUpdateResultData => _subjectResultData.AsObservable();
-
+        #endregion
 
         #region ZenjectInterfaces
         public void Initialize()
@@ -61,9 +62,12 @@ namespace KinectPlayGround.Kinect.Infrastructure
 
         private void InitResultData(KinectDeviceInfo deviceInfo)
         {
+            _depthImageColors = new Color32[deviceInfo.TotalPixelNum];
+
             _resultData.Vertexes = new Vector3[deviceInfo.TotalPixelNum];
             _resultData.Colors = new Color32[deviceInfo.TotalPixelNum];
             _resultData.RGBTexture = new Texture2D(deviceInfo.Width, deviceInfo.Height);
+            _resultData.DepthTexture = new Texture2D(deviceInfo.Width, deviceInfo.Height);
         }
 
         private async UniTaskVoid LoopResultDataUpdater()
@@ -77,6 +81,9 @@ namespace KinectPlayGround.Kinect.Infrastructure
 
                     Image xyzImage = _kinectTransformation.DepthImageToPointCloud(capture.Depth);
                     Short3[] xyzArray = xyzImage.GetPixels<Short3>().ToArray();
+
+                    Image depthImage = capture.Depth;
+                    ushort[] depthArray = depthImage.GetPixels<ushort>().ToArray();
 
                     for (int i = 0; i < DeviceInfo.TotalPixelNum; i++)
                     {
@@ -92,8 +99,23 @@ namespace KinectPlayGround.Kinect.Infrastructure
                             colorArray[i].B,
                             colorArray[i].A
                         );
+
+                        int depthVal = (int)(255 - (255 * (depthArray[i] - 500) / 5000.0));
+                        if (depthVal < 0 || depthVal > 255) depthVal = 255;
+
+                        _depthImageColors[i] = new Color32(
+                            (byte)depthVal,
+                            (byte)depthVal,
+                            (byte)depthVal,
+                            255
+                        );
                     }
+
                     _resultData.RGBTexture.SetPixels32(_resultData.Colors);
+                    _resultData.RGBTexture.Apply();
+
+                    _resultData.DepthTexture.SetPixels32(_depthImageColors);
+                    _resultData.DepthTexture.Apply();
 
                     _subjectResultData.OnNext(_resultData);
                 }

@@ -7,9 +7,7 @@ public class PowerMapVisualizationController : MonoBehaviour
     [SerializeField] private int _resolutionX = 100;
     [SerializeField] private int _resolutionY = 100;
     [SerializeField] private int _intervalMsec = 10;
-    [SerializeField] private GameObject _targetObj = null;
 
-    private Material _targetMaterial = null;
     private float[] _powerArr;
     private ComputeBuffer _powerBuffer = null;
 
@@ -18,7 +16,7 @@ public class PowerMapVisualizationController : MonoBehaviour
     private void Start()
     {
         InitPowerArrAndBuffer();
-        InitMaterial();
+        InitShaderResolution();
 
         UpdatePowerData().Forget();
     }
@@ -29,11 +27,10 @@ public class PowerMapVisualizationController : MonoBehaviour
         _powerBuffer = new ComputeBuffer(_bufferLength, Marshal.SizeOf(typeof(float)));
     }
 
-    private void InitMaterial()
+    private void InitShaderResolution()
     {
-        _targetMaterial = _targetObj.GetComponent<Renderer>().material;
-        _targetMaterial.SetInt("_ResolutionX", _resolutionX);
-        _targetMaterial.SetInt("_ResolutionY", _resolutionY);
+        Shader.SetGlobalInt("_PowerBufferWidth", _resolutionX);
+        Shader.SetGlobalInt("_PowerBufferHeight", _resolutionY);
     }
 
     private async UniTaskVoid UpdatePowerData()
@@ -45,13 +42,12 @@ public class PowerMapVisualizationController : MonoBehaviour
                 for (int y = 0; y < _resolutionY; y++)
                 {
                     int index = x + y * _resolutionX;
-                    //_powerArr[index] = Mathf.Abs(Mathf.Sin(x / _resolutionX * Mathf.PI + Time.time));
-                    _powerArr[index] = UnityEngine.Random.Range(0f, 1f);
+                    _powerArr[index] = (((float)index / _bufferLength) + Time.time) % 1;
                 }
             }
 
             _powerBuffer.SetData(_powerArr);
-            _targetMaterial.SetBuffer("_PowerBuffer", _powerBuffer);
+            Shader.SetGlobalBuffer("_PowerBuffer", _powerBuffer);
 
             await UniTask.Delay(_intervalMsec);
         }

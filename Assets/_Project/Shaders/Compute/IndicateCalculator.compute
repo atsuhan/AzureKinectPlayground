@@ -1,0 +1,14 @@
+﻿#pragma kernel CSMain
+ 
+RWStructuredBuffer<int> IndicateBuffer;
+
+float randSimple(float val)
+{
+    return frac(sin(dot(val, 12.9898)) * 43758.5453);
+}
+ 
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    IndicateBuffer[id.x] += 1;
+}
