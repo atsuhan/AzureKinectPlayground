@@ -1,0 +1,66 @@
+﻿#pragma kernel Initialize
+#pragma kernel AddWave
+#pragma kernel Update
+#pragma kernel Draw
+
+RWTexture2D<float2> waveTexture;
+RWTexture2D<float4> drawTexture;
+float waveCoef;
+float deltaSize;
+float deltaTime;
+float time;
+
+[numthreads(8, 8, 1)]
+void Initialize(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    waveTexture[dispatchThreadId.xy] = float2(0, 0);
+}
+
+[numthreads(8, 8, 1)]
+void AddWave(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    float width, height;
+    waveTexture.GetDimensions(width, height);
+
+    float x = (dispatchThreadId.x / width) * 2.0 - 1.0;
+    float y = (dispatchThreadId.y / height) * 2.0 - 1.0;
+
+    float cx = 0.7 * cos(time * 0.5);
+    float cy = 0.7 * sin(time * 0.5);
+
+    float dx = cx - x;
+    float dy = cy - y;
+
+    float r = sqrt(dx * dx + dy * dy);
+
+    float h = 5.0 * pow(max(0.05 - r, 0.0), 0.5);
+    waveTexture[dispatchThreadId.xy] += float2(h, 0);
+}
+
+[numthreads(8, 8, 1)]
+void Update(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    float width, height;
+    waveTexture.GetDimensions(width, height);
+
+    float2 wave = waveTexture[dispatchThreadId.xy];
+    float a = (deltaTime * deltaTime * waveCoef * waveCoef) / (deltaSize * deltaSize);
+    float h = 2.0 * wave.x - wave.y + a * (
+        (dispatchThreadId.x != 0 ? waveTexture[dispatchThreadId.xy + uint2(-1, 0)].x : waveTexture[dispatchThreadId.xy].x) +
+        (dispatchThreadId.x < width - 1 ? waveTexture[dispatchThreadId.xy + uint2(1, 0)].x : waveTexture[dispatchThreadId.xy].x) +
+        (dispatchThreadId.y != 0 ? waveTexture[dispatchThreadId.xy + uint2(0, -1)].x : waveTexture[dispatchThreadId.xy].x) +
+        (dispatchThreadId.y < height - 1 ? waveTexture[dispatchThreadId.xy + uint2(0, 1)].x : waveTexture[dispatchThreadId.xy].x) +
+        -4.0 * wave.x) - 0.1 * deltaTime * (wave.x - wave.y);
+
+    waveTexture[dispatchThreadId.xy] = float2(h, wave.x);
+}
+
+[numthreads(8, 8, 1)]
+void Draw(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    drawTexture[dispatchThreadId.xy] = lerp(
+        float4(0, 0, 0, 1),
+        float4(1, 1, 1, 1),
+        clamp(waveTexture[dispatchThreadId.xy].x, 0, 1)
+    );
+}

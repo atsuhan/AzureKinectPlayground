@@ -14,6 +14,8 @@ namespace KinectPlayGround.Kinect.Domain
             Width = width;
             Height = height;
         }
+
+        public static KinectDeviceInfo Default = new KinectDeviceInfo(1920, 1080);
     }
 
     public struct KinectResultData
@@ -21,6 +23,7 @@ namespace KinectPlayGround.Kinect.Domain
         public Vector3[] Vertexes;
         public Color32[] Colors;
         public Texture2D RGBTexture;
+        public Texture2D DepthTexture;
     }
 
     public interface IKinectManager
